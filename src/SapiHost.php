@@ -11,6 +11,7 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use function rtrim;
 use RuntimeException;
 use function count;
 use function in_array;
@@ -18,12 +19,10 @@ use function is_array;
 use function ob_get_length;
 use function ob_get_level;
 use function preg_match;
-use function sprintf;
 use function str_replace;
 use function strlen;
 use function substr;
 use function ucwords;
-use function vsprintf;
 use const PHP_OUTPUT_HANDLER_FLUSHABLE;
 use const PHP_OUTPUT_HANDLER_REMOVABLE;
 use const PHP_SAPI;
@@ -262,19 +261,14 @@ class SapiHost
      */
     private function emitStatusLine(ResponseInterface $response): void
     {
-        $statusCode = $response->getStatusCode();
+        $status = $response->getStatusCode();
+        $version = $response->getProtocolVersion();
+        $reason = $response->getReasonPhrase();
 
         $this->sapi->emitHeader(
-            vsprintf(
-                "HTTP/%s %d%s",
-                [
-                    $response->getProtocolVersion(),
-                    $statusCode,
-                    rtrim(" " . $response->getReasonPhrase()),
-                ]
-            ),
+            rtrim("HTTP/{$version} {$status} {$reason}", " "),
             true,
-            $statusCode
+            $status
         );
     }
 
@@ -301,11 +295,7 @@ class SapiHost
 
             foreach ($values as $value) {
                 $this->sapi->emitHeader(
-                    sprintf(
-                        "%s: %s",
-                        $name,
-                        $value
-                    ),
+                    "{$name}: {$value}",
                     $first,
                     $statusCode
                 );
