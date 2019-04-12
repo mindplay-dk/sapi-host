@@ -1,6 +1,6 @@
 <?php
-declare(strict_types=1);
-namespace Narrowspark\HttpEmitter;
+
+namespace Kodus\Http;
 
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
@@ -11,6 +11,22 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Message\UploadedFileFactoryInterface;
 use Psr\Http\Message\UriFactoryInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use RuntimeException;
+use function count;
+use function in_array;
+use function is_array;
+use function ob_get_length;
+use function ob_get_level;
+use function preg_match;
+use function sprintf;
+use function str_replace;
+use function strlen;
+use function substr;
+use function ucwords;
+use function vsprintf;
+use const PHP_OUTPUT_HANDLER_FLUSHABLE;
+use const PHP_OUTPUT_HANDLER_REMOVABLE;
+use const PHP_SAPI;
 
 /**
  * This class implements a SAPI-environment Host for a PSR-15 HTTP Handler.
@@ -43,16 +59,21 @@ class SapiHost
     private $responseFactory;
 
     /**
-     * @var ServerRequestCreatorInterface
-     */
-    private $serverRequestCreator;
-
-    /**
      * Maximum output buffering size for each iteration.
      *
      * @var int
      */
     private $maxBufferLength;
+
+    /**
+     * @var ServerRequestCreatorInterface
+     */
+    private $serverRequestCreator;
+
+    /**
+     * @var SapiFunctions
+     */
+    private $sapi;
 
     public function __construct(
         ServerRequestFactoryInterface $serverRequestFactory,
@@ -61,7 +82,8 @@ class SapiHost
         StreamFactoryInterface $streamFactory,
         ResponseFactoryInterface $responseFactory,
         int $maxBufferLength = 8192,
-        ?ServerRequestCreatorInterface $serverRequestCreator = null
+        ?ServerRequestCreatorInterface $serverRequestCreator = null,
+        ?SapiFunctions $sapi = null
     ) {
         $this->serverRequestFactory = $serverRequestFactory;
         $this->uriFactory = $uriFactory;
@@ -77,6 +99,8 @@ class SapiHost
                 $uploadedFileFactory,
                 $streamFactory
             );
+
+        $this->sapi = $sapi ?: new NativeSapiFunctions();
     }
 
     /**
@@ -99,9 +123,9 @@ class SapiHost
         // Set the status _after_ the headers, because of PHP's "helpful" behavior with location headers.
         $this->emitStatusLine($response);
 
-        $range = $this->parseContentRange($response->getHeaderLine('Content-Range'));
+        $range = $this->parseContentRange($response->getHeaderLine("Content-Range"));
 
-        if (\is_array($range) && $range[0] === 'bytes') {
+        if (is_array($range) && $range[0] === "bytes") {
             $this->emitBodyRange($range, $response, $this->maxBufferLength);
         } else {
             $this->emitBody($response, $this->maxBufferLength);
@@ -113,8 +137,8 @@ class SapiHost
     /**
      * Sends the message body of the response.
      *
-     * @param \Psr\Http\Message\ResponseInterface $response
-     * @param int                                 $maxBufferLength
+     * @param ResponseInterface $response
+     * @param int               $maxBufferLength
      */
     private function emitBody(ResponseInterface $response, int $maxBufferLength): void
     {
@@ -138,9 +162,9 @@ class SapiHost
     /**
      * Emit a range of the message body.
      *
-     * @param array                               $range
-     * @param \Psr\Http\Message\ResponseInterface $response
-     * @param int                                 $maxBufferLength
+     * @param array             $range
+     * @param ResponseInterface $response
+     * @param int               $maxBufferLength
      */
     private function emitBodyRange(array $range, ResponseInterface $response, int $maxBufferLength): void
     {
@@ -156,7 +180,7 @@ class SapiHost
         }
 
         if (! $body->isReadable()) {
-            echo \substr($body->getContents(), $first, (int) $length);
+            echo substr($body->getContents(), $first, (int) $length);
 
             return;
         }
@@ -164,8 +188,8 @@ class SapiHost
         $remaining = $length;
 
         while ($remaining >= $maxBufferLength && ! $body->eof()) {
-            $contents   = $body->read($maxBufferLength);
-            $remaining -= \strlen($contents);
+            $contents = $body->read($maxBufferLength);
+            $remaining -= strlen($contents);
 
             echo $contents;
         }
@@ -177,7 +201,8 @@ class SapiHost
 
     /**
      * Parse content-range header
-     * http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16.
+     *
+     * @link http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.16.
      *
      * @param string $header
      *
@@ -186,12 +211,12 @@ class SapiHost
      */
     private function parseContentRange($header): ?array
     {
-        if (\preg_match('/(?P<unit>[\w]+)\s+(?P<first>\d+)-(?P<last>\d+)\/(?P<length>\d+|\*)/', $header, $matches) === 1) {
+        if (preg_match('/(?P<unit>[\w]+)\s+(?P<first>\d+)-(?P<last>\d+)\/(?P<length>\d+|\*)/', $header, $matches) === 1) {
             return [
-                $matches['unit'],
-                (int) $matches['first'],
-                (int) $matches['last'],
-                $matches['length'] === '*' ? '*' : (int) $matches['length'],
+                $matches["unit"],
+                (int) $matches["first"],
+                (int) $matches["last"],
+                $matches["length"] === "*" ? "*" : (int) $matches["length"],
             ];
         }
 
@@ -201,25 +226,23 @@ class SapiHost
     /**
      * Assert either that no headers been sent or the output buffer contains no content.
      *
-     * @throws \RuntimeException
-     *
      * @return void
+     *
+     * @throws RuntimeException
      */
     private function assertNoPreviousOutput(): void
     {
         $file = $line = null;
 
-        if (headers_sent($file, $line)) {
-            throw new RuntimeException(\sprintf(
-                'Unable to emit response: Headers already sent in file %s on line %s. ' .
-                'This happens if echo, print, printf, print_r, var_dump, var_export or similar statement that writes to the output buffer are used.',
-                $file,
-                $line
-            ));
+        if ($this->sapi->headersSent($file, $line)) {
+            throw new RuntimeException(
+                "Unable to emit response: Headers already sent in file \"{$file}\" line {$line}. " .
+                "This happens if echo, print, printf, print_r, var_dump, var_export or similar statement that writes to the output buffer are used."
+            );
         }
 
-        if (\ob_get_level() > 0 && \ob_get_length() > 0) {
-            throw new RuntimeException('Output has been emitted previously; cannot emit response.');
+        if (ob_get_level() > 0 && ob_get_length() > 0) {
+            throw new RuntimeException("Output has been emitted previously; cannot emit response.");
         }
     }
 
@@ -233,7 +256,7 @@ class SapiHost
      * the status code of the emitted response, this method should be called
      * after `emitBody()`
      *
-     * @param \Psr\Http\Message\ResponseInterface $response
+     * @param ResponseInterface $response
      *
      * @return void
      */
@@ -241,13 +264,13 @@ class SapiHost
     {
         $statusCode = $response->getStatusCode();
 
-        header(
-            \vsprintf(
-                'HTTP/%s %d%s',
+        $this->sapi->emitHeader(
+            vsprintf(
+                "HTTP/%s %d%s",
                 [
                     $response->getProtocolVersion(),
                     $statusCode,
-                    \rtrim(' ' . $response->getReasonPhrase()),
+                    rtrim(" " . $response->getReasonPhrase()),
                 ]
             ),
             true,
@@ -263,22 +286,23 @@ class SapiHost
      * in such a way as to create aggregate headers (instead of replace
      * the previous).
      *
-     * @param \Psr\Http\Message\ResponseInterface $response
+     * @param ResponseInterface $response
      *
      * @return void
      */
     private function emitHeaders(ResponseInterface $response): void
     {
+        // TODO why are we emitting the status code with every line? emitStatusLine() does that last
         $statusCode = $response->getStatusCode();
 
         foreach ($response->getHeaders() as $header => $values) {
-            $name  = $this->toWordCase($header);
-            $first = $name !== 'Set-Cookie';
+            $name = $this->toWordCase($header);
+            $first = $name !== "Set-Cookie";
 
             foreach ($values as $value) {
-                header(
-                    \sprintf(
-                        '%s: %s',
+                $this->sapi->emitHeader(
+                    sprintf(
+                        "%s: %s",
                         $name,
                         $value
                     ),
@@ -292,7 +316,7 @@ class SapiHost
     }
 
     /**
-     * Converts header names to wordcase.
+     * Converts header names to word case.
      *
      * @param string $header
      *
@@ -300,10 +324,10 @@ class SapiHost
      */
     private function toWordCase(string $header): string
     {
-        $filtered = \str_replace('-', ' ', $header);
-        $filtered = \ucwords($filtered);
+        $filtered = str_replace("-", " ", $header);
+        $filtered = ucwords($filtered);
 
-        return \str_replace(' ', '-', $filtered);
+        return str_replace(" ", "-", $filtered);
     }
 
     /**
@@ -314,18 +338,17 @@ class SapiHost
      */
     private function closeConnection(): void
     {
-        if (! \in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            $status = \ob_get_status(true);
-            $level  = \count($status);
-            $flags  = \PHP_OUTPUT_HANDLER_REMOVABLE | (\PHP_OUTPUT_HANDLER_FLUSHABLE);
+        if (! in_array(PHP_SAPI, ["cli", "phpdbg"], true)) {
+            $status = ob_get_status(true);
+            $level = count($status);
+            $flags = PHP_OUTPUT_HANDLER_REMOVABLE | PHP_OUTPUT_HANDLER_FLUSHABLE;
 
-            while ($level-- > 0 && (bool) ($s = $status[$level]) && ($s['del'] ?? ! isset($s['flags']) || $flags === ($s['flags'] & $flags))) {
-                \ob_end_flush();
+            // TODO unroll inline assignments and unminify
+            while ($level-- > 0 && (bool) ($s = $status[$level]) && ($s["del"] ?? ! isset($s["flags"]) || $flags === ($s["flags"] & $flags))) {
+                ob_end_flush();
             }
         }
 
-        if (\function_exists('fastcgi_finish_request')) {
-            \fastcgi_finish_request();
-        }
+        $this->sapi->finishRequest();
     }
 }
