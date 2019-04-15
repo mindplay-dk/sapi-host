@@ -286,7 +286,7 @@ class SapiHost
      */
     private function emitHeaders(ResponseInterface $response): void
     {
-        // TODO why are we emitting the status code with every line? emitStatusLine() does that last
+        // TODO remove duplicate status code emits; fold `emitStatusLine()` into this method to avoid confusion
         $statusCode = $response->getStatusCode();
 
         foreach ($response->getHeaders() as $header => $values) {
