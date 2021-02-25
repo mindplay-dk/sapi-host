@@ -19,16 +19,16 @@
         }
     ],
     "require": {
-        "php": "^7.1 || ^8.0",
+        "php": "^7.3 || ^8.0",
         "nyholm/psr7-server": "^1.0.1",
         "psr/http-factory": "^1.0",
         "psr/http-message": "^1.0",
         "psr/http-server-handler": "^1.0"
     },
     "require-dev": {
-        "mindplay/testies": "^1.0@dev",
+        "mindplay/testies": "^1.0",
         "nyholm/psr7": "^1.1",
-        "phpunit/php-code-coverage": "^7.0"
+        "phpunit/php-code-coverage": "^9.2.5"
     },
     "autoload": {
         "psr-4": {
