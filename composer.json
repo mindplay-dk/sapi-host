@@ -1,5 +1,6 @@
 {
-    "name": "kodus/sapi-host",
+    "name": "mindplay/sapi-host",
+    "conflict": { "kodus/sapi-host": "*" },
     "type": "library",
     "description": "FCGI SAPI host for dispatch of PSR-15 Handler",
     "keywords": [
