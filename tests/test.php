@@ -39,7 +39,7 @@ class MockServerRequestCreator implements ServerRequestCreatorInterface
         array $headers = [],
         array $cookie = [],
         array $get = [],
-        array $post = [],
+        ?array $post = [],
         array $files = [],
         $body = null
     ): ServerRequestInterface {
