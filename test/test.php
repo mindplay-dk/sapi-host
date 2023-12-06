@@ -3,8 +3,6 @@
 namespace test;
 
 use Error;
-use function header_register_callback;
-use function headers_list;
 use function in_array;
 use Kodus\Http\SapiFunctions;
 use Kodus\Http\SapiHost;
@@ -26,6 +24,8 @@ use RuntimeException;
 $ROOT = dirname(__DIR__);
 
 require "{$ROOT}/vendor/autoload.php";
+
+configure()->enableCodeCoverage(__DIR__ . "/build/coverage.xml", ["{$ROOT}/src"]);
 
 class MockServerRequestCreator implements ServerRequestCreatorInterface
 {
@@ -237,9 +237,5 @@ test(
         );
     }
 );
-
-if (enabled("coverage")) {
-    configure()->enableCodeCoverage(__DIR__ . "/build/coverage.xml", ["{$ROOT}/src"]);
-}
 
 exit(run());
