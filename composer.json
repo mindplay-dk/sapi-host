@@ -9,8 +9,10 @@
         "host",
         "fcgi",
         "emitter",
+        "front controller",
         "psr-7",
-        "psr-15"
+        "psr-15",
+        "psr-17"
     ],
     "license": "MIT",
     "authors": [
