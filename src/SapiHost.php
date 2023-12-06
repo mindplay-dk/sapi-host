@@ -33,20 +33,12 @@ class SapiHost
 {
     /**
      * Maximum output buffering size for each iteration.
-     *
-     * @var int
      */
-    private $maxBufferLength;
+    private int $maxBufferLength;
 
-    /**
-     * @var ServerRequestCreatorInterface
-     */
-    private $serverRequestCreator;
+    private ServerRequestCreatorInterface $serverRequestCreator;
 
-    /**
-     * @var SapiFunctions
-     */
-    private $sapi;
+    private SapiFunctions $sapi;
 
     public function __construct(
         ServerRequestFactoryInterface $serverRequestFactory,
