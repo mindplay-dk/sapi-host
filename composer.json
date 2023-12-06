@@ -27,9 +27,10 @@
         "psr/http-server-handler": "^1.0"
     },
     "require-dev": {
-        "mindplay/testies": "^1.0",
+        "mindplay/testies": "^1.1@dev",
         "nyholm/psr7": "^1.1",
-        "phpunit/php-code-coverage": "^9.2.5"
+        "phpunit/php-code-coverage": "^10",
+        "mindplay/readable": "^1.2@dev"
     },
     "autoload": {
         "psr-4": {
@@ -37,6 +38,6 @@
         }
     },
     "scripts": {
-        "test": "php test/test.php"
+        "test": "XDEBUG_MODE=coverage php test/test.php"
     }
 }
