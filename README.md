@@ -35,7 +35,6 @@ $host = new SapiHost(
     $factory,
     $factory,
     $factory,
-    $factory,
     $factory
 );
 
