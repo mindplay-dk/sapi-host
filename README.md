@@ -3,6 +3,8 @@
 
 This library implements a SAPI host for dispatch of PSR-15 `HandlerInterface`.
 
+In a nutshell, this is a front-controller for the `index.php` file in a PSR-7/15/17 based project.
+
 Originally a fork of [Daniel Bannert](https://github.com/prisis)'s
 [`narrowspark/http-emitter`](https://packagist.org/packages/narrowspark/http-emitter) package, this package
 takes a different approach, internally leveraging [Tobias Nyholm](https://github.com/Nyholm)'s
