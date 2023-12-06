@@ -1,10 +1,9 @@
 <?php
 
-namespace Kodus\Http;
+namespace mindplay\host;
 
 use Nyholm\Psr7Server\ServerRequestCreator;
 use Nyholm\Psr7Server\ServerRequestCreatorInterface;
-use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -33,31 +32,6 @@ use const PHP_SAPI;
 class SapiHost
 {
     /**
-     * @var ServerRequestFactoryInterface
-     */
-    private $serverRequestFactory;
-
-    /**
-     * @var UriFactoryInterface
-     */
-    private $uriFactory;
-
-    /**
-     * @var UploadedFileFactoryInterface
-     */
-    private $uploadedFileFactory;
-
-    /**
-     * @var StreamFactoryInterface
-     */
-    private $streamFactory;
-
-    /**
-     * @var ResponseFactoryInterface
-     */
-    private $responseFactory;
-
-    /**
      * Maximum output buffering size for each iteration.
      *
      * @var int
@@ -79,16 +53,10 @@ class SapiHost
         UriFactoryInterface $uriFactory,
         UploadedFileFactoryInterface $uploadedFileFactory,
         StreamFactoryInterface $streamFactory,
-        ResponseFactoryInterface $responseFactory,
-        int $maxBufferLength = 8192,
+        int $maxBufferLength = 65536,
         ?ServerRequestCreatorInterface $serverRequestCreator = null,
         ?SapiFunctions $sapi = null
     ) {
-        $this->serverRequestFactory = $serverRequestFactory;
-        $this->uriFactory = $uriFactory;
-        $this->uploadedFileFactory = $uploadedFileFactory;
-        $this->streamFactory = $streamFactory;
-        $this->responseFactory = $responseFactory;
         $this->maxBufferLength = $maxBufferLength;
 
         $this->serverRequestCreator = $serverRequestCreator

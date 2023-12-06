@@ -4,10 +4,9 @@ namespace test;
 
 use Error;
 use function in_array;
-use Kodus\Http\SapiFunctions;
-use Kodus\Http\SapiHost;
+use mindplay\host\SapiFunctions;
+use mindplay\host\SapiHost;
 use function mindplay\testies\configure;
-use function mindplay\testies\enabled;
 use function mindplay\testies\eq;
 use function mindplay\testies\expect;
 use function mindplay\testies\ok;
@@ -104,7 +103,6 @@ function create_host(?SapiCapture $sapi = null): SapiHost
     $factory =  new Psr17Factory();
 
     return new SapiHost(
-        $factory,
         $factory,
         $factory,
         $factory,
