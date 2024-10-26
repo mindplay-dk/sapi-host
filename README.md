@@ -1,4 +1,4 @@
-## `mindplaysapi-host`
+## `mindplay/sapi-host`
 
 This library implements a SAPI host for dispatch of PSR-15 `HandlerInterface`.
 
