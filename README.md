@@ -1,9 +1,6 @@
-`kodus/sapi-host`
-=================
+## `mindplaysapi-host`
 
 This library implements a SAPI host for dispatch of PSR-15 `HandlerInterface`.
-
-**This project is work in progress.**
 
 Originally a fork of [Daniel Bannert](https://github.com/prisis)'s
 [`narrowspark/http-emitter`](https://packagist.org/packages/narrowspark/http-emitter) package, this package
