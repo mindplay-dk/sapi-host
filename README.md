@@ -1,6 +1,6 @@
 ## `mindplay/sapi-host`
 
-This library implements a SAPI host for dispatch of PSR-15 `HandlerInterface`.
+This library implements a SAPI host for dispatch of PSR-15 `RequestHandlerInterface`.
 
 In a nutshell, this is a front-controller for the `index.php` file in a PSR-7/15/17 based project.
 
